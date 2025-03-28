@@ -44,21 +44,26 @@ def start_video(video_path: str):
         exit()
     return video_capture, total_frames
 
-def calculate_capture_rate(total_frames: int, max_frame_count: int) -> int:
+def calculate_capture_rate(total_frames: int, 
+                           max_frame_count: int) -> int:
     num_capture_rate = int(total_frames / max_frame_count)        
     if num_capture_rate == 0:
         num_capture_rate = 1
     print ( "NUM CAPTURE RATE: " + str(num_capture_rate))
     return num_capture_rate
 
-def create_save_video_folder(output_folder: str, video_path:str) -> str:
+def create_save_video_folder(output_folder: str, 
+                             video_path:str) -> str:
     t = unidecode(os.path.basename(video_path).split(".")[0]).replace('"', '').replace("'", '')
     save_video_folder_name = os.path.basename(os.path.dirname(video_path)) + '____' + str(t)
     save_video_folder = os.path.join(output_folder, save_video_folder_name)
     os.makedirs(save_video_folder, exist_ok=True)
     return save_video_folder
 
-def process_video(video_capture, num_capture_rate: int, max_frame_count:int, save_video_folder: str) -> None:
+def process_video(video_capture, 
+                  num_capture_rate: int,
+                  max_frame_count:int, 
+                  save_video_folder: str) -> None:
     frame_count = 0
     extracted_frame_count = 0
     while True:
@@ -94,6 +99,35 @@ def main(data: dict, output_folder: str):
             save_video_folder = create_save_video_folder(output_folder, video_path)
             process_video(video_capture, num_capture_rate, max_frame_count, save_video_folder)
 
+def write_video(image_folder, video_name):
+    import cv2
+    import os
+
+    t = {}
+    # Collect image filenames (ensure they are sorted in the right order)
+    for img in os.listdir(image_folder):
+        if img.endswith('.jpg') or img.endswith('.png'):
+            t[img] = int(os.path.basename(img).split('.')[0]) # assume image is named as 1.jpg, 2.jpg, 3.jpg, etc
+    # Sorting by the integer values (in ascending order)
+    sorted_items = sorted(t.items(), key=lambda item: item[1])
+    sorted_dict = dict(sorted_items)
+    images = list(sorted_dict.keys())
+    # Read the first image to get the frame dimensions
+    frame = cv2.imread(os.path.join(image_folder, images[0]))
+    height, width, _ = frame.shape
+
+    # Define the codec and create a VideoWriter object
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    video = cv2.VideoWriter(video_name, fourcc, 24, (width, height))
+
+    for image in images:
+        img_path = os.path.join(image_folder, image)
+        frame = cv2.imread(img_path)
+        video.write(frame)
+
+    # Release the VideoWriter
+    video.release()
+    print("Video creation complete!")
 
 if __name__ == "__main__":
     for folder_path in ["1_extracted_frames", "2_dest_folder", "3_AI_label"]:
